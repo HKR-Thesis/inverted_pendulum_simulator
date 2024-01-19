@@ -5,13 +5,13 @@ class InvertedPendulum:
     def __init__(self):
         self.g = 9.81  # acceleration due to gravity, in m/s^2
         self.m = 0.5   # mass of the pendulum, in kg
-        self.l = 0.25   # length of the pendulum rod, in m
+        self.l = 0.35   # length of the pendulum rod, in m
         self.b = 0.1   # damping coefficient, friction at the pivot, in kg*m^2/s
         self.I = self.m * self.l ** 2  # moment of inertia for a rod with mass at the end, in kg*m^2
         self.dt = 0.01 # time step for the simulation, in s
         
         # Additional mass at the top of the rod
-        self.additional_mass = 0.1  # Mass of the copper weight in kg
+        self.additional_mass = 0.4  # Mass of the copper weight in kg
         self.additional_height = 0.05  # Height of the copper weight in meters (5cm)
         self.additional_radius = 0.015  # Radius of the copper weight in meters (3cm)
 
