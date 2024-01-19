@@ -11,7 +11,7 @@ class InvertedPendulum:
         self.dt = 0.01 # time step for the simulation, in s
         
         # Additional mass at the top of the rod
-        self.additional_mass = 1  # Mass of the copper weight in kg
+        self.additional_mass = 0.8  # Mass of the copper weight in kg
         self.additional_height = 0.05  # Height of the copper weight in meters (5cm)
         self.additional_radius = 0.015  # Radius of the copper weight in meters (3cm)
 
@@ -127,7 +127,7 @@ class InvertedPendulum:
 
         # Enforce angle limit with inelastic collision
         if abs(theta_from_vertical) > self.max_theta:
-            omega *= -0.4  # Inelastic collision damping
+            omega *= -0.45  # Inelastic collision damping
         
         theta_from_vertical = np.clip(theta_from_vertical, -self.max_theta, self.max_theta)
 
