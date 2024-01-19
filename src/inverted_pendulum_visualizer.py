@@ -21,7 +21,7 @@ class InvertedPendulumVisualizer:
         self.F_max = 10
         self.last_voltage = 0
         self.cart = patches.Rectangle((self.pendulum.cart_position - self.cart_width / 2, -self.cart_height / 2),
-                                      self.cart_width, self.cart_height, fc='blue')
+                                      self.cart_width, self.cart_height, fc='black')
         self.ax.add_patch(self.cart)
         self.line, = self.ax.plot([], [], 'o-', lw=2, markersize=8)
         self.ax.axhline(0, color='black', lw=2)

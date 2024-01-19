@@ -32,6 +32,7 @@ class InvertedPendulum:
         # Friction and air resistance constants
         self.friction_coefficient = 0.2
         self.air_resistance_coefficient = 0.1
+        self.friction_exponent = 1.5
 
         # Initial state [theta, omega, cart_position, cart_velocity]
         # theta: pendulum angle from the vertical (downward) position, omega: angular velocity
@@ -80,8 +81,9 @@ class InvertedPendulum:
         domega_dt = (dL_domega - dL_dtheta) / self.I + applied_force * self.l / self.I * np.cos(theta_from_vertical)
         dtheta_dt = omega
 
-        # Cart dynamics with friction and air resistance
-        total_force = applied_force - self.friction_coefficient * np.sign(cart_velocity) - self.air_resistance_coefficient * cart_velocity
+        # Implement non-linear friction
+        friction_force = self.friction_coefficient * np.sign(cart_velocity) * np.abs(cart_velocity)**self.friction_exponent
+        total_force = applied_force - friction_force - self.air_resistance_coefficient * cart_velocity
         dv_dt = total_force / self.m
         dx_dt = cart_velocity
 
@@ -125,7 +127,7 @@ class InvertedPendulum:
 
         # Enforce angle limit with inelastic collision
         if abs(theta_from_vertical) > self.max_theta:
-            omega *= -0.5  # Inelastic collision damping
+            omega *= -0.4  # Inelastic collision damping
         
         theta_from_vertical = np.clip(theta_from_vertical, -self.max_theta, self.max_theta)
 
