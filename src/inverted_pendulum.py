@@ -45,13 +45,13 @@ class InvertedPendulum:
         
         # Pendulum dynamics
         sin_theta = np.sin(theta)
-        cos_theta = np.cos(theta)
         dtheta_dt = omega
-        domega_dt = (-self.g / self.l) * sin_theta - (self.b / self.I) * omega + (applied_force * cos_theta) / self.I
-        
-        # Cart dynamics
+        # Include the term for the force applied to the cart
+        domega_dt = (-self.g / self.l * sin_theta + applied_force / self.m / self.l * np.cos(theta)) - self.b / self.I * omega
+
+        # Cart dynamics - only if the cart is moving
         dx_dt = cart_velocity
-        dv_dt = applied_force / self.m
+        dv_dt = applied_force / (self.m + self.I / self.l**2) if self.l != 0 else 0
         
         # Adjust theta back for the state representation
         dtheta_dt_adjusted = dtheta_dt
@@ -65,23 +65,22 @@ class InvertedPendulum:
         # Integrate the equations of motion over one timestep
         t = np.linspace(0, self.dt, 2)
         new_state = odeint(self.equations_of_motion, self.state, t, args=(force,))[-1]
-        
-        # Correct the pendulum angle to be within the restricted range from upright position
-        upper_limit = np.pi + self.max_theta  # Upper angle limit
-        lower_limit = np.pi - self.max_theta  # Lower angle limit
-        
-        # The angle in the state is already from the downward position, so we adjust it accordingly
-        if new_state[0] > upper_limit:
-            new_state[0] = upper_limit
-            new_state[1] = 0  # Angular velocity is zeroed if the angle is out of bounds
-        elif new_state[0] < lower_limit:
-            new_state[0] = lower_limit
-            new_state[1] = 0  # Angular velocity is zeroed if the angle is out of bounds
+
+        # Enforce angle limit with inelastic collision
+        collision_damping = 0.5  # Adjust for less bounce
+        if new_state[0] > np.pi + self.max_theta:
+            new_state[0] = np.pi + self.max_theta
+            new_state[1] *= -collision_damping
+        elif new_state[0] < np.pi - self.max_theta:
+            new_state[0] = np.pi - self.max_theta
+            new_state[1] *= -collision_damping
 
         # Enforce track boundaries for cart position
         new_state[2] = np.clip(new_state[2], 0, self.track_length)
-        new_state[3] = np.clip(new_state[3], -self.max_voltage, self.max_voltage)  # Assuming this is the velocity limit
-
+        # Make sure the cart velocity is zero if the cart is at the boundary
+        # if new_state[2] == 0 or new_state[2] == self.track_length:
+        #     new_state[3] = 0
+        
         # Update the state with the new values
         self.state = new_state
         return self.state
@@ -94,7 +93,7 @@ class InvertedPendulum:
 class InvertedPendulumVisualizer:
     def __init__(self, pendulum):
         self.pendulum = pendulum
-        self.fig, self.ax = plt.subplots()
+        self.fig, self.ax = plt.subplots(figsize=(12, 6))  # Adjust figsize as needed
         self.ax.set_aspect('equal')
         self.ax.set_xlim(0, 1)  # Track is 1 meter long
         self.ax.set_ylim(-1.5 * self.pendulum.l, 1.5 * self.pendulum.l)  # Set y-axis limits
@@ -117,21 +116,21 @@ class InvertedPendulumVisualizer:
     def update(self, frame):
         # Simulate the pendulum step
         self.pendulum.simulate_step(self.last_voltage)
-        theta, omega, cart_x, cart_v = self.pendulum.state
+        theta, omega, cart_x, cart_v = self.pendulum.state  # Unpack the state
 
         # Calculate the pendulum rod's end position
-        pendulum_end_x = cart_x + self.pendulum.l * np.sin(self.pendulum.state[0])
-        pendulum_end_y = -self.pendulum.l * np.cos(self.pendulum.state[0])
+        pendulum_end_x = cart_x + self.pendulum.l * np.sin(theta)
+        pendulum_end_y = -self.pendulum.l * np.cos(theta)
 
         # Update the cart and pendulum positions for visualization
         self.cart.set_xy((cart_x - self.cart_width / 2, -0.05))
         self.line.set_data([cart_x, pendulum_end_x], [0, pendulum_end_y])
 
         # Update text annotations with the current state
-        self.angle_text.set_text(f'Angle (rad): {self.pendulum.state[0]:.2f}')
-        self.omega_text.set_text(f'Angular velocity (rad/s): {self.pendulum.state[1]:.2f}')
-        self.x_text.set_text(f'Cart position (m): {self.pendulum.get_cart_position():.2f}')
-        self.v_text.set_text(f'Cart velocity (m/s): {0.00:.2f}')  # Cart is stationary
+        self.angle_text.set_text(f'Angle (rad): {theta:.2f}')
+        self.omega_text.set_text(f'Angular velocity (rad/s): {omega:.2f}')
+        self.x_text.set_text(f'Cart position (m): {cart_x:.2f}')
+        self.v_text.set_text(f'Cart velocity (m/s): {cart_v:.2f}')
 
         return self.cart, self.line, self.angle_text, self.omega_text, self.x_text, self.v_text
 
@@ -145,7 +144,7 @@ class InvertedPendulumVisualizer:
             self.last_voltage = 0  # No voltage applied if any other key is pressed
 
     def animate(self):
-        ani = FuncAnimation(self.fig, self.update, frames=144, interval=144, blit=True)
+        ani = FuncAnimation(self.fig, self.update, frames=60, interval=60, blit=False)
         self.fig.canvas.mpl_connect('key_press_event', self.key_event)
         self.ax.set_aspect('equal')
         plt.show()
