@@ -10,7 +10,7 @@ class InvertedPendulum:
         self.dt = 0.02 # time step for the simulation, in s
         
         # Additional mass at the top of the rod
-        self.additional_mass = 0.67  # Mass of the copper weight in kg
+        self.additional_mass = 0.7  # Mass of the copper weight in kg
         self.additional_height = 0.06  # Height of the copper weight in meters (5cm)
         self.additional_radius = 0.02  # Radius of the copper weight in meters (3cm)
 
@@ -21,9 +21,9 @@ class InvertedPendulum:
         self.I += self.additional_moment_of_inertia
         
         self.max_voltage = 0.8  # maximum voltage, in volts
-        self.max_force = 10  # maximum force that can be applied by the motor, in N. This is a temporary guess, needs to be verified on robot.
+        self.max_force = 5  # maximum force that can be applied by the motor, in N. This is a temporary guess, needs to be verified on robot.
         self.voltage_to_force_scale = self.max_force / self.max_voltage
-        self.max_theta = np.radians(15)  # max deviation from vertical, in radians
+        self.max_theta = np.radians(12.25)  # max deviation from vertical, in radians
         
         self.track_length = 1.0  # length of the track, in m
         self.cart_position = 0.5  # Cart's initial position on the track, in m
