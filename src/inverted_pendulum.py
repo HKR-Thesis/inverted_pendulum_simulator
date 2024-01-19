@@ -1,92 +1,157 @@
 import numpy as np
 from scipy.integrate import odeint
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from IPython.display import display
+import ipywidgets as widgets
+import matplotlib.patches as patches
+
+import numpy as np
+from scipy.integrate import odeint
 
 class InvertedPendulum:
     def __init__(self):
-        self.g = 9.81  # gravity
-        self.m = 0.5   # mass of the pendulum
-        self.M = 1.0   # mass of the cart
-        self.l = 0.5   # length of the pendulum
-        self.b = 0.1   # friction coefficient of the cart
-        self.I = 0.006 # moment of inertia of the pendulum
-        self.dt = 0.01 # time step
+        self.g = 9.81  # acceleration due to gravity, in m/s^2
+        self.m = 0.5   # mass of the pendulum, in kg
+        self.l = 0.25   # length of the pendulum rod, in m
+        self.b = 0.1   # damping coefficient, friction at the pivot, in kg*m^2/s
+        self.I = self.m * self.l ** 2  # moment of inertia for a rod with mass at the end, in kg*m^2
+        self.dt = 0.01 # time step for the simulation, in s
         
-        self.theta_max_voltage = 4.6  # in volts
-        self.theta_min_voltage = 1.6  # in volts
-        theta_voltage_range = self.theta_max_voltage - self.theta_min_voltage
+        self.max_voltage = 0.8  # maximum voltage, in volts
+        self.max_force = 10  # maximum force that can be applied by the motor, in N
+        self.voltage_to_force_scale = self.max_force / self.max_voltage
+        self.max_theta = np.radians(12.25)  # max deviation from vertical, in radians
+        
+        self.track_length = 1.0  # length of the track, in m
+        self.cart_position = 0.5  # Cart's initial position on the track, in m
 
-        theta_max_radians = np.radians(22.5)
-        self.theta_min_radians = -theta_max_radians  # assuming symmetric range
-        theta_radians_range = theta_max_radians - self.theta_min_radians
+        # Initial state [theta, omega, cart_position, cart_velocity]
+        # theta: pendulum angle from the vertical (downward) position, omega: angular velocity
+        # cart_position: position of the cart on the track, cart_velocity: velocity of the cart
+        self.state = [np.pi, 0.1, 0.5, 0]  # starts upright with a small push
+        
+    def apply_voltage(self, voltage):
+        # Convert the applied voltage to force
+        force = voltage * self.voltage_to_force_scale
+        return force
 
-        self.x_max_position = 1.0  # TODO: adjust this based on actual robot dimensions
-
-        x_max_voltage = 0.8  # in volts
-        x_full_range = 2 * self.x_max_position  # since -x_max corresponds to 0V and +x_max corresponds to 0.8V
-
-        self.angle_scale_factor = theta_voltage_range / theta_radians_range
-        self.position_scale_factor = x_max_voltage / x_full_range
-        self.elasticity = 1  # elasticity of the boundary or any collision/sudden stop
-
-        # Initial state [theta, x, omega, v]
-        self.state = [np.pi, 0, 0, 0]  # starting with pendulum down and cart at center
-
-    def equations_of_motion(self, state, t, F):
-        theta, x, omega, v = state
-
-        # Compute the derivatives
+    def equations_of_motion(self, state, t, applied_force):
+        theta, omega, cart_position, cart_velocity = state
+        
+        # Adjust the angle to be measured from the upright position
+        theta -= np.pi
+        
+        # Pendulum dynamics
         sin_theta = np.sin(theta)
         cos_theta = np.cos(theta)
-        denominator = self.I * (self.M + self.m) + self.M * self.m * self.l ** 2 * (cos_theta ** 2)
+        dtheta_dt = omega
+        domega_dt = (-self.g / self.l) * sin_theta - (self.b / self.I) * omega + (applied_force * cos_theta) / self.I
+        
+        # Cart dynamics
+        dx_dt = cart_velocity
+        dv_dt = applied_force / self.m
+        
+        # Adjust theta back for the state representation
+        dtheta_dt_adjusted = dtheta_dt
+        
+        return [dtheta_dt_adjusted, domega_dt, dx_dt, dv_dt]
 
-        # Angular acceleration
-        omega_dot = (self.g * sin_theta * (self.M + self.m) - cos_theta * (F + self.m * self.l * omega ** 2 * sin_theta - self.b * v)) / denominator
-
-        # Acceleration of the cart
-        x_dot = (F + self.m * self.l * (omega ** 2 * sin_theta - omega_dot * cos_theta) - self.b * v) / (self.M + self.m)
-
-        return [omega, x_dot, omega_dot, v]
-
-    def simulate_step(self, force):
+    def simulate_step(self, voltage=0):
+        # Calculate the force from the voltage
+        force = self.apply_voltage(voltage)
+        
         # Integrate the equations of motion over one timestep
         t = np.linspace(0, self.dt, 2)
         new_state = odeint(self.equations_of_motion, self.state, t, args=(force,))[-1]
+        
+        # Correct the pendulum angle to be within the restricted range from upright position
+        upper_limit = np.pi + self.max_theta  # Upper angle limit
+        lower_limit = np.pi - self.max_theta  # Lower angle limit
+        
+        # The angle in the state is already from the downward position, so we adjust it accordingly
+        if new_state[0] > upper_limit:
+            new_state[0] = upper_limit
+            new_state[1] = 0  # Angular velocity is zeroed if the angle is out of bounds
+        elif new_state[0] < lower_limit:
+            new_state[0] = lower_limit
+            new_state[1] = 0  # Angular velocity is zeroed if the angle is out of bounds
 
-        # Check if the cart has hit the boundary
-        if new_state[1] <= -self.x_max_position or new_state[1] >= self.x_max_position:
-            # Calculate the cart's change in velocity
-            delta_v = -2 * new_state[3] * self.elasticity
+        # Enforce track boundaries for cart position
+        new_state[2] = np.clip(new_state[2], 0, self.track_length)
+        new_state[3] = np.clip(new_state[3], -self.max_voltage, self.max_voltage)  # Assuming this is the velocity limit
 
-            # The impulse experienced by the cart
-            impulse = delta_v * self.M
-            
-            # Calculate the effect on the pendulum
-            # The impulse causes a change in angular momentum at the pivot point
-            # Assume that the impulse acts through the center of mass of the pendulum
-            angular_impulse = impulse * self.l
-
-            # Update the pendulum's angular velocity
-            # The angular impulse is divided by the moment of inertia to get the change in angular velocity
-            new_state[2] += angular_impulse / self.I
-
-            # Correct the cart's position if it goes beyond the boundary
-            new_state[1] = np.clip(new_state[1], -self.x_max_position, self.x_max_position)
-
-            # If the collision is perfectly inelastic, the cart stops; otherwise, it bounces back
-            new_state[3] = 0 if self.elasticity == 0 else new_state[3]
-
+        # Update the state with the new values
         self.state = new_state
-        return new_state
-
-    def state_to_voltage(self):
-        theta, x, _, _ = self.state
-        theta_voltage = ((theta - self.theta_min_radians) * self.angle_scale_factor) + self.theta_min_voltage
-        x_voltage = (x + 0.5) * self.position_scale_factor + 0.4  # Adjust for the center at 0.5 meters with 0.4V
-        return theta_voltage, x_voltage
-
-    def reset(self):
-        # Introduce randomness in initial conditions to generalize learning
-        initial_theta = np.random.uniform(-np.pi, np.pi)  # Random initial angle
-        initial_x = np.random.uniform(-self.x_max_position, self.x_max_position)
-        self.state = [initial_theta, initial_x, 0, 0]
         return self.state
+
+    def get_cart_position(self):
+        # Return the current cart position
+        return self.cart_position
+
+
+class InvertedPendulumVisualizer:
+    def __init__(self, pendulum):
+        self.pendulum = pendulum
+        self.fig, self.ax = plt.subplots()
+        self.ax.set_aspect('equal')
+        self.ax.set_xlim(0, 1)  # Track is 1 meter long
+        self.ax.set_ylim(-1.5 * self.pendulum.l, 1.5 * self.pendulum.l)  # Set y-axis limits
+        self.cart_width = 0.2
+        self.cart_height = 0.1
+        self.F_max = 10
+        self.last_voltage = 0
+        self.cart = patches.Rectangle((self.pendulum.cart_position - self.cart_width / 2, -self.cart_height / 2),
+                                      self.cart_width, self.cart_height, fc='blue')
+        self.ax.add_patch(self.cart)
+        self.line, = self.ax.plot([], [], 'o-', lw=2, markersize=8)
+        self.ax.axhline(0, color='black', lw=2)
+
+        # Initialize text annotations at a fixed position on the right side of the plot
+        self.angle_text = self.ax.text(1.05, 0.95, '', transform=self.ax.transAxes)
+        self.omega_text = self.ax.text(1.05, 0.90, '', transform=self.ax.transAxes)
+        self.x_text = self.ax.text(1.05, 0.85, '', transform=self.ax.transAxes)
+        self.v_text = self.ax.text(1.05, 0.80, '', transform=self.ax.transAxes)
+
+    def update(self, frame):
+        # Simulate the pendulum step
+        self.pendulum.simulate_step(self.last_voltage)
+        theta, omega, cart_x, cart_v = self.pendulum.state
+
+        # Calculate the pendulum rod's end position
+        pendulum_end_x = cart_x + self.pendulum.l * np.sin(self.pendulum.state[0])
+        pendulum_end_y = -self.pendulum.l * np.cos(self.pendulum.state[0])
+
+        # Update the cart and pendulum positions for visualization
+        self.cart.set_xy((cart_x - self.cart_width / 2, -0.05))
+        self.line.set_data([cart_x, pendulum_end_x], [0, pendulum_end_y])
+
+        # Update text annotations with the current state
+        self.angle_text.set_text(f'Angle (rad): {self.pendulum.state[0]:.2f}')
+        self.omega_text.set_text(f'Angular velocity (rad/s): {self.pendulum.state[1]:.2f}')
+        self.x_text.set_text(f'Cart position (m): {self.pendulum.get_cart_position():.2f}')
+        self.v_text.set_text(f'Cart velocity (m/s): {0.00:.2f}')  # Cart is stationary
+
+        return self.cart, self.line, self.angle_text, self.omega_text, self.x_text, self.v_text
+
+    def key_event(self, event):
+        # Set the last applied voltage based on key press
+        if event.key == 'left':
+            self.last_voltage = -self.pendulum.max_voltage
+        elif event.key == 'right':
+            self.last_voltage = self.pendulum.max_voltage
+        else:
+            self.last_voltage = 0  # No voltage applied if any other key is pressed
+
+    def animate(self):
+        ani = FuncAnimation(self.fig, self.update, frames=144, interval=144, blit=True)
+        self.fig.canvas.mpl_connect('key_press_event', self.key_event)
+        self.ax.set_aspect('equal')
+        plt.show()
+
+# Usage
+if __name__ == "__main__":
+    pendulum = InvertedPendulum()
+    visualizer = InvertedPendulumVisualizer(pendulum)
+    visualizer.animate()
