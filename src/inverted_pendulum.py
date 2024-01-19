@@ -77,9 +77,6 @@ class InvertedPendulum:
 
         # Enforce track boundaries for cart position
         new_state[2] = np.clip(new_state[2], 0, self.track_length)
-        # Make sure the cart velocity is zero if the cart is at the boundary
-        # if new_state[2] == 0 or new_state[2] == self.track_length:
-        #     new_state[3] = 0
         
         # Update the state with the new values
         self.state = new_state
@@ -149,7 +146,6 @@ class InvertedPendulumVisualizer:
         self.ax.set_aspect('equal')
         plt.show()
 
-# Usage
 if __name__ == "__main__":
     pendulum = InvertedPendulum()
     visualizer = InvertedPendulumVisualizer(pendulum)
