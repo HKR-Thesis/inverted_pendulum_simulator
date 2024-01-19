@@ -63,7 +63,7 @@ class InvertedPendulumVisualizer:
             self.last_voltage = 0  # No voltage applied if any other key is pressed
 
     def animate(self):
-        ani = FuncAnimation(self.fig, self.update, frames=60, interval=60, blit=False)
+        ani = FuncAnimation(self.fig, self.update, frames=144, interval=33, blit=False)
         self.fig.canvas.mpl_connect('key_press_event', self.key_event)
         self.ax.set_aspect('equal')
         plt.show()
