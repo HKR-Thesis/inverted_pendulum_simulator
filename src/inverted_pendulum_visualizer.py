@@ -7,20 +7,19 @@ from inverted_pendulum import InvertedPendulum
 class InvertedPendulumVisualizer:
     def __init__(self, pendulum):
         self.pendulum = pendulum
-        self.fig = plt.figure(figsize=(12, 8))  # Adjusted figure size to accommodate the text above plots
+        self.fig = plt.figure(figsize=(12, 8))
         
-        # Define a gridspec with two rows and three columns
-        gs = self.fig.add_gridspec(2, 3, height_ratios=[1, 5])  # Adjust height_ratios for appropriate text space
+        gs = self.fig.add_gridspec(2, 3, height_ratios=[1, 5])
         
         # Create axes for the pendulum visualization and for plotting data
-        self.ax_main = self.fig.add_subplot(gs[1, 0])  # Main plot for pendulum visualization on the bottom row
-        self.ax_angle = self.fig.add_subplot(gs[1, 1])  # Angle plot on the bottom row
-        self.ax_position = self.fig.add_subplot(gs[1, 2])  # Position plot on the bottom row
+        self.ax_main = self.fig.add_subplot(gs[1, 0])
+        self.ax_angle = self.fig.add_subplot(gs[1, 1])
+        self.ax_position = self.fig.add_subplot(gs[1, 2])
 
         # Setup main plot (pendulum visualization)
         self.ax_main.set_aspect('equal')
-        self.ax_main.set_xlim(0, 1)  # Track is 1 meter long
-        self.ax_main.set_ylim(-1.5 * self.pendulum.l, 1.5 * self.pendulum.l)  # Set y-axis limits
+        self.ax_main.set_xlim(0, 1)
+        self.ax_main.set_ylim(-1.5 * self.pendulum.l, 1.5 * self.pendulum.l)
         self.cart_width = 0.2
         self.cart_height = 0.1
         self.cart = patches.Rectangle((self.pendulum.cart_position - self.cart_width / 2, -self.cart_height / 2),
@@ -32,12 +31,12 @@ class InvertedPendulumVisualizer:
         self.ax_angle.set_title("Pendulum Angle")
         self.ax_angle.set_xlabel("Time (s)")
         self.ax_angle.set_ylabel("Angle (rad)")
-        self.ax_angle.set_ylim(np.pi - 0.349, np.pi + 0.349)  # Angle range around π (±20 degrees)
+        self.ax_angle.set_ylim(np.pi - 0.349, np.pi + 0.349)
 
         self.ax_position.set_title("Cart Position")
         self.ax_position.set_xlabel("Time (s)")
         self.ax_position.set_ylabel("Position (m)")
-        self.ax_position.set_ylim(0, 1)  # Cart position range
+        self.ax_position.set_ylim(0, 1)
 
         self.time_data = []
         self.angle_data = []
@@ -49,13 +48,9 @@ class InvertedPendulumVisualizer:
         self.last_voltage = 0
         self.time_elapsed = 0
 
-        # Setup the text axis to span all columns in the top row
-        self.text_ax = self.fig.add_subplot(gs[0, :])  # Text span all columns on the top row
-        self.text_ax.axis('off')  # No axis for text annotations
-        # Text is aligned to the top and spans the full width of the figure
-        self.info_text = self.text_ax.text(0.5, 0.5, '', transform=self.text_ax.transAxes,
-                                           fontname='Courier', fontsize=10,
-                                           ha='center', va='center')  # Centered in the dedicated text space
+        self.text_ax = self.fig.add_subplot(gs[0, :])
+        self.text_ax.axis('off')
+        self.info_text = self.text_ax.text(0.5, 0.5, '', transform=self.text_ax.transAxes, fontname='Courier', fontsize=10, ha='center', va='center')
 
     def update(self, frame):
         self.pendulum.simulate_step(self.last_voltage)
@@ -86,13 +81,12 @@ class InvertedPendulumVisualizer:
         return [self.cart, self.line, self.angle_line, self.position_line, self.info_text]
 
     def key_event(self, event):
-        # Set the last applied voltage based on key press
         if event.key == 'left':
             self.last_voltage = -self.pendulum.max_voltage
         elif event.key == 'right':
             self.last_voltage = self.pendulum.max_voltage
         else:
-            self.last_voltage = 0  # No voltage applied if any other key is pressed
+            self.last_voltage = 0
 
     def animate(self):
         ani = FuncAnimation(self.fig, self.update, frames=144, interval=33, blit=False)

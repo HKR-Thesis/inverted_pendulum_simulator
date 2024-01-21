@@ -9,19 +9,21 @@ class InvertedPendulum:
         self.I = self.m * self.l ** 2  # moment of inertia for a rod with mass at the end, in kg*m^2
         self.dt = 0.02 # time step for the simulation, in s
         
-        # Additional mass at the top of the rod
-        self.additional_mass = 0.8  # Mass of the copper weight in kg
-        self.additional_height = 0.06  # Height of the copper weight in meters (5cm)
-        self.additional_radius = 0.02  # Radius of the copper weight in meters (3cm)
+        # Additional mass screwed onto the top 1/8th part of the rod
+        self.additional_mass = 0.67  # Mass of the additional weight in kg
+
+        # Calculate the position where the additional mass is attached
+        attachment_position = self.l * 7 / 8
 
         # Calculate the moment of inertia for the additional mass
-        self.additional_moment_of_inertia = (1/12) * self.additional_mass * self.additional_height**2 + self.additional_mass * self.additional_radius**2
+        # Using the point mass formula I = m * r^2
+        self.additional_moment_of_inertia = self.additional_mass * attachment_position**2
 
         # Adjust the total moment of inertia to include the additional mass
         self.I += self.additional_moment_of_inertia
         
         self.max_voltage = 0.8  # maximum voltage, in volts
-        self.max_force = 6  # maximum force that can be applied by the motor, in N. This is a temporary guess, needs to be verified on robot, calculated using F = τ/r.
+        self.max_force = 6.5  # maximum force that can be applied by the motor, in N. This is a temporary guess, needs to be verified on robot, calculated using F = τ/r.
         self.voltage_to_force_scale = self.max_force / self.max_voltage
         self.max_theta = np.radians(20)  # max deviation from vertical, in radians
         
