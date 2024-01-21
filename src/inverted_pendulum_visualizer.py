@@ -98,7 +98,7 @@ class InvertedPendulumVisualizer:
             self.last_voltage = 0
 
     def animate(self):
-        FuncAnimation(self.fig, self.update, frames=144, interval=33, blit=False)
+        ani = FuncAnimation(self.fig, self.update, frames=144, interval=33, blit=False)
         self.fig.canvas.mpl_connect("key_press_event", self.key_event)
         plt.show()
 
