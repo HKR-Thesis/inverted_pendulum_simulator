@@ -1,55 +1,106 @@
 import numpy as np
+from typing import List
 from scipy.integrate import solve_ivp
 
-class InvertedPendulum:
-    def __init__(self):
-        self.g = 9.81  # gravitational acceleration in m/s^2
-        self.m = 1.3   # mass of the pendulum in kg
-        self.l = 0.45  # length of the pendulum rod, in m
-        self.I = self.m * self.l ** 2  # moment of inertia for a rod with mass at the end, in kg*m^2
-        self.dt = 0.02 # time step for the simulation, in s
-        
-        # Additional mass screwed onto the top 1/8th part of the rod
-        self.additional_mass = 0.67  # Mass of the additional weight in kg
 
-        # Calculate the position where the additional mass is attached
+class InvertedPendulum:
+    """
+    # Inverted Pendulum
+    A class for simulating a pendulum and cart system with additional mass.
+
+    Args:
+        None
+
+    Attributes:
+    ```markdown
+        | Attribute                              | Description                                                                                                                        |
+        | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+        | g (float)                              | Gravitational acceleration in m/s^2.                                                                                               |
+        | m (float)                              | Mass of the pendulum in kg.                                                                                                        |
+        | l (float)                              | Length of the pendulum rod in meters.                                                                                              |
+        | I (float)                              | Moment of inertia for the pendulum in kg*m^2.                                                                                      |
+        | dt (float)                             | Time step for the simulation in seconds.                                                                                           |
+        | additional_mass (float)                | Mass of the additional weight in kg.                                                                                               |
+        | additional_moment_of_inertia (float)   | Moment of inertia for the additional mass in kg*m^2, using mass formula I = m * r^2.                                               |
+        | max_voltage (float)                    | Maximum voltage for the motor in volts.                                                                                            |
+        | max_force (float)                      | Maximum force that can be applied by the motor in Newtons. Calculated using F = τ/r. TODO: Update with real life measurements!     |
+        | voltage_to_force_scale (float)         | Scale factor for converting voltage to force.                                                                                      |
+        | max_theta (float)                      | Maximum deviation from the vertical in radians.                                                                                    |
+        | track_length (float)                   | Length of the track in meters.                                                                                                     |
+        | cart_position (float)                  | Initial position of the cart on the track in meters.                                                                               |
+        | friction_coefficient (float)           | Coefficient of friction.                                                                                                           |
+        | air_resistance_coefficient (float)     | Coefficient of air resistance.                                                                                                     |
+        | friction_exponent (float)              | Exponent for friction calculations.                                                                                                |
+        | state (list)                           | Initial state of the system [theta, omega, cart_position, cart_velocity].<br>theta (float): Pendulum angle from the vertical
+                                                   (downward) position in radians.<br>omega (float): Angular velocity of the pendulum.<br>cart_position (float): Position of the
+                                                   cart on the track.<br>cart_velocity (float): Velocity of the cart.                                                                 |
+    ```
+
+    Usage:
+        pendulum_simulator = PendulumSimulator()
+    """
+
+    def __init__(self) -> None:
+        self.g = 9.81
+        self.m = 1.3
+        self.l = 0.45
+        self.I = self.m * self.l**2
+        self.dt = 0.02
+
+        self.additional_mass = 0.67
+
         attachment_position = self.l * 7 / 8
 
-        # Calculate the moment of inertia for the additional mass
-        # Using the point mass formula I = m * r^2
-        self.additional_moment_of_inertia = self.additional_mass * attachment_position**2
+        self.additional_moment_of_inertia = (
+            self.additional_mass * attachment_position**2
+        )
 
         # Adjust the total moment of inertia to include the additional mass
         self.I += self.additional_moment_of_inertia
-        
-        self.max_voltage = 0.8  # maximum voltage, in volts
-        self.max_force = 6.5  # maximum force that can be applied by the motor, in N. This is a temporary guess, needs to be verified on robot, calculated using F = τ/r.
+
+        self.max_voltage = 0.8
+        self.max_force = 6.5
         self.voltage_to_force_scale = self.max_force / self.max_voltage
-        self.max_theta = np.radians(20)  # max deviation from vertical, in radians
-        
-        self.track_length = 1.0  # length of the track, in m
-        self.cart_position = 0.5  # Cart's initial position on the track, in m
+        self.max_theta = np.radians(20)
+
+        self.track_length = 1.0
+        self.cart_position = 0.5
 
         # Friction and air resistance constants
         self.friction_coefficient = 0.3
         self.air_resistance_coefficient = 0.1
         self.friction_exponent = 1.5
 
-        # Initial state [theta, omega, cart_position, cart_velocity]
-        # theta: pendulum angle from the vertical (downward) position, omega: angular velocity
-        # cart_position: position of the cart on the track, cart_velocity: velocity of the cart
-        self.state = [np.pi, 0.1, 0.5, 0]  # starts upright with a small push
-        
-    # Apply a voltage to the motor
-    # Returns the force applied by the motor
-    def apply_voltage(self, voltage):
-        # Convert the applied voltage to force
+        # Starts upright with a small push
+        self.state = [np.pi, 0.1, 0.5, 0]
+
+    def apply_voltage(self, voltage: float) -> float:
+        """
+        ### apply_voltage/2
+        Apply a voltage to the motor.
+        Returns the force applied by the motor.
+
+        Args:
+            voltage (float): Voltage
+
+        Returns:
+            float: Force, Convert the applied voltage to force
+        """
+
         force = voltage * self.voltage_to_force_scale
         return force
 
-    # Lagrangian for the system
-    # state: [theta, omega, cart_position, cart_velocity]
-    def lagrangian(self, state):
+    def lagrangian(self, state: List[float]) -> float:
+        """
+        ### lagrangian/2
+        Lagrangian for the system.
+
+        Args:
+            state (List[float]): [theta, omega, cart_position, cart_velocity]
+
+        Returns:
+            float: (L = Kinetic Energy (T) - Potential Energy (V))
+        """
         theta, omega, cart_position, cart_velocity = state
         theta -= np.pi  # Adjusting the angle from the upright position
 
@@ -65,10 +116,22 @@ class InvertedPendulum:
         L = T - V
         return L
 
-    # Equations of motion for the system
-    # Returns the derivatives of the state vector
-    # state: [theta, omega, cart_position, cart_velocity]
-    def equations_of_motion(self, t, state, applied_force):
+    def equations_of_motion(
+        self, t: any, state: List[float], applied_force: float
+    ) -> List[float]:
+        """
+        ### equations_of_motion/4
+        Equations of motion for the system.
+        Returns the derivatives of the state vector.
+
+        Args:
+            t (any): TODO: What is this?
+            state (List[float]): [theta, omega, cart_position, cart_velocity]
+            applied_force (float): Used in Euler-Lagrange Equation.
+
+        Returns:
+            List[float]: [theta, omega, cart_position, cart_velocity]
+        """
         theta, omega, cart_position, cart_velocity = state
         # Use the angle measured from the vertical position instead of the horizontal position
         theta_from_vertical = theta - np.pi
@@ -79,37 +142,69 @@ class InvertedPendulum:
         dL_domega = self.I * omega
 
         # Euler-Lagrange Equation
-        domega_dt = (dL_domega - dL_dtheta) / self.I + applied_force * self.l / self.I * np.cos(theta_from_vertical)
+        domega_dt = (
+            dL_domega - dL_dtheta
+        ) / self.I + applied_force * self.l / self.I * np.cos(theta_from_vertical)
         dtheta_dt = omega
 
         # Implement non-linear friction
-        friction_force = self.friction_coefficient * np.sign(cart_velocity) * np.abs(cart_velocity)**self.friction_exponent
-        total_force = applied_force - friction_force - self.air_resistance_coefficient * cart_velocity
+        friction_force = (
+            self.friction_coefficient
+            * np.sign(cart_velocity)
+            * np.abs(cart_velocity) ** self.friction_exponent
+        )
+        total_force = (
+            applied_force
+            - friction_force
+            - self.air_resistance_coefficient * cart_velocity
+        )
         dv_dt = total_force / self.m
         dx_dt = cart_velocity
 
         return [dtheta_dt, domega_dt, dx_dt, dv_dt]
 
-    # Simulate a single step of the pendulum
-    # Returns the new state of the system
-    def simulate_step(self, voltage=0):
+    def simulate_step(self, voltage=0) -> List[float]:
+        """
+        ### simulate_step/2
+        Simulate a single step of the pendulum
+        Returns the new state of the systems
+
+        Args:
+            voltage (int, optional): Voltage. Defaults to 0.
+
+        Returns:
+            List[float]: [theta, omega, cart_position, cart_velocity]
+        """
         force = self.apply_voltage(voltage)
 
         # Integrate the equations of motion
         # The state is integrated from 0 to dt
         solution = solve_ivp(
             lambda t, y: self.equations_of_motion(t, y, force),
-            [0, self.dt], self.state, method='RK45', t_eval=[self.dt]
+            [0, self.dt],
+            self.state,
+            method="RK45",
+            t_eval=[self.dt],
         )
-        
+
         new_state = solution.y[:, -1]
         self.state = self.enforce_constraints(new_state, force)
         return self.state
 
-    # Enforce constraints on the state of the system
-    # This is done to prevent the pendulum from going beyond the limits of the track
-    # and to prevent the pendulum from swinging too far from the vertical position
-    def enforce_constraints(self, state, force):
+    def enforce_constraints(self, state: List[float], force: float) -> List[float]:
+        """
+        ### enforce_constraints/3
+        Enforce constraints on the state of the system.
+        This is done to prevent the pendulum from going beyond the limits of the track
+        and to prevent the pendulum from swinging too far from the vertical position.
+
+        Args:
+            state (List[float]): [theta, omega, cart_position, cart_velocity]
+            force (float): TODO: Unused parameter?
+
+        Returns:
+            List[float]: [theta, omega, cart_position, cart_velocity]. Adjusted theta back to original representation.
+        """
         theta, omega, cart_position, cart_velocity = state
         theta_from_vertical = theta - np.pi  # Measure angle from the vertical
 
@@ -129,9 +224,10 @@ class InvertedPendulum:
         # Enforce angle limit with inelastic collision
         if abs(theta_from_vertical) > self.max_theta:
             omega *= -0.375  # Inelastic collision damping
-        
-        theta_from_vertical = np.clip(theta_from_vertical, -self.max_theta, self.max_theta)
 
-        # Adjust theta back to original representation
+        theta_from_vertical = np.clip(
+            theta_from_vertical, -self.max_theta, self.max_theta
+        )
+
         theta = theta_from_vertical + np.pi
         return [theta, omega, cart_position, cart_velocity]
