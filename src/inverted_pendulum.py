@@ -5,12 +5,12 @@ class InvertedPendulum:
     def __init__(self):
         self.g = 9.81  # gravitational acceleration in m/s^2
         self.m = 1.3   # mass of the pendulum in kg
-        self.l = 0.4  # length of the pendulum rod, in m
+        self.l = 0.45  # length of the pendulum rod, in m
         self.I = self.m * self.l ** 2  # moment of inertia for a rod with mass at the end, in kg*m^2
         self.dt = 0.02 # time step for the simulation, in s
         
         # Additional mass at the top of the rod
-        self.additional_mass = 0.7  # Mass of the copper weight in kg
+        self.additional_mass = 0.8  # Mass of the copper weight in kg
         self.additional_height = 0.06  # Height of the copper weight in meters (5cm)
         self.additional_radius = 0.02  # Radius of the copper weight in meters (3cm)
 
@@ -21,15 +21,15 @@ class InvertedPendulum:
         self.I += self.additional_moment_of_inertia
         
         self.max_voltage = 0.8  # maximum voltage, in volts
-        self.max_force = 5  # maximum force that can be applied by the motor, in N. This is a temporary guess, needs to be verified on robot.
+        self.max_force = 6  # maximum force that can be applied by the motor, in N. This is a temporary guess, needs to be verified on robot, calculated using F = τ/r.
         self.voltage_to_force_scale = self.max_force / self.max_voltage
-        self.max_theta = np.radians(12.25)  # max deviation from vertical, in radians
+        self.max_theta = np.radians(20)  # max deviation from vertical, in radians
         
         self.track_length = 1.0  # length of the track, in m
         self.cart_position = 0.5  # Cart's initial position on the track, in m
 
         # Friction and air resistance constants
-        self.friction_coefficient = 0.1
+        self.friction_coefficient = 0.3
         self.air_resistance_coefficient = 0.1
         self.friction_exponent = 1.5
 
@@ -57,7 +57,7 @@ class InvertedPendulum:
         T = T_cart + T_pendulum
 
         # Potential Energy (V)
-        V = self.m * (self.g + 2) * self.l * (1 - np.cos(theta))
+        V = self.m * self.g * self.l * (1 - np.cos(theta))
 
         # Lagrangian (L = T - V)
         L = T - V
