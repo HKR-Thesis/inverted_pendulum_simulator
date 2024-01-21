@@ -92,3 +92,8 @@ class InvertedPendulumVisualizer:
         ani = FuncAnimation(self.fig, self.update, frames=144, interval=33, blit=False)
         self.fig.canvas.mpl_connect('key_press_event', self.key_event)
         plt.show()
+
+if __name__ == "__main__":
+    pendulum = InvertedPendulum()
+    visualizer = InvertedPendulumVisualizer(pendulum)
+    visualizer.animate()
