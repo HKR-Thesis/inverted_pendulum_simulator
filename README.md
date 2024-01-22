@@ -20,5 +20,5 @@ The Inverted Pendulum Simulation is designed to serve as a tool for understandin
 ```
 
 ```shell
-  python3 test.py
+  python3 inverted_pendulum_visualizer.py
 ```
