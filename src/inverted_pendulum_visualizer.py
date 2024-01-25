@@ -13,20 +13,20 @@ class InvertedPendulumVisualizer:
         - `pendulum` (InvertedPendulum): An instance of the InvertedPendulum class representing the system.
 
     Attributes:
-        ```markdown
-        | Attribute                            | Description                                                 |
-        | ------------------------------------ | ----------------------------------------------------------- |
-        | fig (matplotlib.figure.Figure)       | The main figure for visualization.                          |
-        | pendulum (InvertedPendulum)          | The inverted pendulum system to be visualized.              |
-        | ax_main (matplotlib.axes._axes.Axes) | The main axes for the pendulum visualization.               |
-        | cart_width (float)                   | Width of the cart in the visualization.                     |
-        | cart_height (float)                  | Height of the cart in the visualization.                    |
-        | cart (matplotlib.patches.Rectangle)  | Rectangle representing the cart in the visualization.       |
-        | line (matplotlib.lines.Line2D)       | Line representing the pendulum in the visualization.        |
-        | last_voltage (float)                 | The last applied voltage to the pendulum system.            |
-        | time_elapsed (float)                 | Elapsed time during the visualization.                      |
-        | info_text (matplotlib.text.Text)     | Text for displaying information on the visualization.       |
-        ```
+
+    | Attribute                            | Description                                                 |
+    |--------------------------------------|-------------------------------------------------------------|
+    | fig (matplotlib.figure.Figure)       | The main figure for visualization.                          |
+    | pendulum (InvertedPendulum)          | The inverted pendulum system to be visualized.              |
+    | ax_main (matplotlib.axes._axes.Axes) | The main axes for the pendulum visualization.               |
+    | cart_width (float)                   | Width of the cart in the visualization.                     |
+    | cart_height (float)                  | Height of the cart in the visualization.                    |
+    | cart (matplotlib.patches.Rectangle)  | Rectangle representing the cart in the visualization.       |
+    | line (matplotlib.lines.Line2D)       | Line representing the pendulum in the visualization.        |
+    | last_voltage (float)                 | The last applied voltage to the pendulum system.            |
+    | time_elapsed (float)                 | Elapsed time during the visualization.                      |
+    | info_text (matplotlib.text.Text)     | Text for displaying information on the visualization.       |
+
 
 
     Usage:
