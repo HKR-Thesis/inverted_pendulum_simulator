@@ -42,12 +42,12 @@ class InvertedPendulum:
 
     def __init__(self) -> None:
         self.g = 9.81
-        self.m = 1.3
-        self.l = 0.45
+        self.m = 0.17
+        self.l = 0.305
         self.I = self.m * self.l**2
         self.dt = 0.02
 
-        self.additional_mass = 0.67
+        self.additional_mass = 0.09
 
         attachment_position = self.l * 7 / 8
 
@@ -58,12 +58,12 @@ class InvertedPendulum:
         # Adjust the total moment of inertia to include the additional mass
         self.I += self.additional_moment_of_inertia
 
-        self.max_voltage = 0.8
-        self.max_force = 6.5
+        self.max_voltage = 60
+        self.max_force = 1.2
         self.voltage_to_force_scale = self.max_force / self.max_voltage
-        self.max_theta = np.radians(20)
+        self.max_theta = np.radians(25)
 
-        self.track_length = 1.0
+        self.track_length = 0.5
         self.cart_position = 0.5
 
         # Friction and air resistance constants
@@ -72,7 +72,7 @@ class InvertedPendulum:
         self.friction_exponent = 1.5
 
         # Starts upright with a small push
-        self.state = [np.pi, 0.1, 0.5, 0]
+        self.state = [np.pi, 0.1, 0.25, 0]
 
     def apply_voltage(self, voltage: float) -> float:
         """
@@ -188,10 +188,10 @@ class InvertedPendulum:
         )
 
         new_state = solution.y[:, -1]
-        self.state = self.enforce_constraints(new_state, force)
+        self.state = self.enforce_constraints(new_state, voltage)
         return self.state
 
-    def enforce_constraints(self, state: List[float], force: float) -> List[float]:
+    def enforce_constraints(self, state: List[float], voltage: float) -> List[float]:
         """
         ### enforce_constraints/3
         Enforce constraints on the state of the system.
@@ -211,7 +211,7 @@ class InvertedPendulum:
         # Check if the cart is at the boundaries
         at_boundary = cart_position <= 0 or cart_position >= self.track_length
 
-        if at_boundary:
+        if at_boundary or voltage == 0:
             # If at boundary, the cart should stop
             cart_position = np.clip(cart_position, 0, self.track_length)
             if cart_velocity != 0:
@@ -223,7 +223,7 @@ class InvertedPendulum:
 
         # Enforce angle limit with inelastic collision
         if abs(theta_from_vertical) > self.max_theta:
-            omega *= -0.375  # Inelastic collision damping
+            omega *= -0.5  # Inelastic collision damping
 
         theta_from_vertical = np.clip(
             theta_from_vertical, -self.max_theta, self.max_theta
