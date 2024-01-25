@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.animation import FuncAnimation
-from inverted_pendulum import InvertedPendulum
 
 
 class InvertedPendulumVisualizer:
@@ -34,7 +33,7 @@ class InvertedPendulumVisualizer:
         visualizer = Visualizer(pendulum)
     """
 
-    def __init__(self, pendulum: InvertedPendulum):
+    def __init__(self, pendulum: object):
         self.pendulum = pendulum
         self.fig, self.ax_main = plt.subplots(figsize=(12, 12))
 
@@ -102,8 +101,42 @@ class InvertedPendulumVisualizer:
         self.fig.canvas.mpl_connect("key_press_event", self.key_event)
         plt.show()
 
+    def __update_prerendering(self, frame):
+        theta, omega, cart_position, cart_velocity = self.states[frame]
+
+        self.cart.set_xy((cart_position - self.cart_width / 2, -0.05))
+        self.line.set_data(
+            [cart_position, cart_position + self.pendulum.l * np.sin(theta)],
+            [0, -self.pendulum.l * np.cos(theta)],
+        )
+
+        info_template = (
+            f"Angle (rad): {theta:.2f}\n"
+            f"Angular velocity (rad/s): {omega:.2f}\n"
+            f"Cart position (m): {cart_position:.2f}\n"
+            f"Cart velocity (m/s): {cart_velocity:.2f}"
+        )
+        self.info_text.set_text(info_template)
+
+        return [self.cart, self.line, self.info_text]
+
+    def animate_states(self, states):
+        self.states = states
+        num_frames = len(states)
+
+        ani = FuncAnimation(
+            self.fig,
+            self.__update_prerendering,
+            frames=num_frames,
+            interval=33,
+            blit=False,
+        )
+        plt.show()
+
 
 if __name__ == "__main__":
+    from inverted_pendulum import InvertedPendulum
+
     pendulum = InvertedPendulum()
     visualizer = InvertedPendulumVisualizer(pendulum)
     visualizer.animate()
