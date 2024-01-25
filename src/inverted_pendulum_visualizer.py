@@ -40,7 +40,7 @@ class InvertedPendulumVisualizer:
 
         # Setup main plot (pendulum visualization)
         self.ax_main.set_aspect("equal")
-        self.ax_main.set_xlim(0, 1)
+        self.ax_main.set_xlim(0, 0.5)
         self.ax_main.set_ylim(-1.5 * self.pendulum.l, 1.5 * self.pendulum.l)
         self.cart_width = 0.2
         self.cart_height = 0.1
