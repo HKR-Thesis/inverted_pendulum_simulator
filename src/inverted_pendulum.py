@@ -12,29 +12,25 @@ class InvertedPendulum:
         None
 
     Attributes:
-    ```markdown
-        | Attribute                              | Description                                                                                                                        |
-        | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-        | g (float)                              | Gravitational acceleration in m/s^2.                                                                                               |
-        | m (float)                              | Mass of the pendulum in kg.                                                                                                        |
-        | l (float)                              | Length of the pendulum rod in meters.                                                                                              |
-        | I (float)                              | Moment of inertia for the pendulum in kg*m^2.                                                                                      |
-        | dt (float)                             | Time step for the simulation in seconds.                                                                                           |
-        | additional_mass (float)                | Mass of the additional weight in kg.                                                                                               |
-        | additional_moment_of_inertia (float)   | Moment of inertia for the additional mass in kg*m^2, using mass formula I = m * r^2.                                               |
-        | max_voltage (float)                    | Maximum voltage for the motor in volts.                                                                                            |
-        | max_force (float)                      | Maximum force that can be applied by the motor in Newtons. Calculated using F = τ/r. TODO: Update with real life measurements!     |
-        | voltage_to_force_scale (float)         | Scale factor for converting voltage to force.                                                                                      |
-        | max_theta (float)                      | Maximum deviation from the vertical in radians.                                                                                    |
-        | track_length (float)                   | Length of the track in meters.                                                                                                     |
-        | cart_position (float)                  | Initial position of the cart on the track in meters.                                                                               |
-        | friction_coefficient (float)           | Coefficient of friction.                                                                                                           |
-        | air_resistance_coefficient (float)     | Coefficient of air resistance.                                                                                                     |
-        | friction_exponent (float)              | Exponent for friction calculations.                                                                                                |
-        | state (list)                           | Initial state of the system [theta, omega, cart_position, cart_velocity].<br>theta (float): Pendulum angle from the vertical
-                                                   (downward) position in radians.<br>omega (float): Angular velocity of the pendulum.<br>cart_position (float): Position of the
-                                                   cart on the track.<br>cart_velocity (float): Velocity of the cart.                                                                 |
-    ```
+    | Attribute                              | Description                                                                                                                        |
+    | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+    | g (float)                              | Gravitational acceleration in m/s^2.                                                                                               |
+    | m (float)                              | Mass of the pendulum in kg.                                                                                                        |
+    | l (float)                              | Length of the pendulum rod in meters.                                                                                              |
+    | I (float)                              | Moment of inertia for the pendulum in kg*m^2.                                                                                      |
+    | dt (float)                             | Time step for the simulation in seconds.                                                                                           |
+    | additional_mass (float)                | Mass of the additional weight in kg.                                                                                               |
+    | additional_moment_of_inertia (float)   | Moment of inertia for the additional mass in kg*m^2, using mass formula I = m * r^2.                                               |
+    | max_voltage (float)                    | Maximum voltage for the motor in volts.                                                                                            |
+    | max_force (float)                      | Maximum force that can be applied by the motor in Newtons. Calculated using F = τ/r. TODO: Update with real life measurements!     |
+    | voltage_to_force_scale (float)         | Scale factor for converting voltage to force.                                                                                      |
+    | max_theta (float)                      | Maximum deviation from the vertical in radians.                                                                                    |
+    | track_length (float)                   | Length of the track in meters.                                                                                                     |
+    | cart_position (float)                  | Initial position of the cart on the track in meters.                                                                               |
+    | friction_coefficient (float)           | Coefficient of friction.                                                                                                           |
+    | air_resistance_coefficient (float)     | Coefficient of air resistance.                                                                                                     |
+    | friction_exponent (float)              | Exponent for friction calculations.                                                                                                |
+    | state (list)                           | Initial state of the system [theta, omega, cart_position, cart_velocity].<br>theta (float): Pendulum angle from the vertical (downward) position in radians.<br>omega (float): Angular velocity of the pendulum.<br>cart_position (float): Position of the cart on the track.<br>cart_velocity (float): Velocity of the cart.|
 
     Usage:
         pendulum_simulator = PendulumSimulator()
