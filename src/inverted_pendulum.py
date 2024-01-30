@@ -30,7 +30,7 @@ class InvertedPendulum:
     | friction_coefficient (float)           | Coefficient of friction.                                                                                                           |
     | air_resistance_coefficient (float)     | Coefficient of air resistance.                                                                                                     |
     | friction_exponent (float)              | Exponent for friction calculations.                                                                                                |
-    | state (list)                           | Initial state of the system [theta, omega, cart_position, cart_velocity].<br>theta (float): Pendulum angle from the vertical (downward) position in radians.<br>omega (float): Angular velocity of the pendulum.<br>cart_position (float): Position of the cart on the track.<br>cart_velocity (float): Velocity of the cart.|
+    | state (list)                           | Initial state of the system [theta, omega, cart_position, cart_velocity].\n*theta* (float): Pendulum angle from the vertical (downward) position in radians.\n*omega* (float): Angular velocity of the pendulum.\n*cart_position* (float): Position of the cart on the track.\n*cart_velocity* (float): Velocity of the cart.|
 
     Usage:
         pendulum_simulator = PendulumSimulator()
@@ -60,7 +60,7 @@ class InvertedPendulum:
         self.max_theta = np.radians(25)
 
         self.track_length = 0.5
-        self.cart_position = 0.5
+        self.cart_position = 0.25
 
         # Friction and air resistance constants
         self.friction_coefficient = 0.3
@@ -68,7 +68,7 @@ class InvertedPendulum:
         self.friction_exponent = 1.5
 
         # Starts upright with a small push
-        self.state = [np.pi, 0.1, 0.25, 0]
+        self.state = [np.pi, 0.1, self.cart_position, 0]
 
     def apply_voltage(self, voltage: float) -> float:
         """
