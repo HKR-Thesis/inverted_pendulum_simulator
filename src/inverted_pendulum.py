@@ -159,7 +159,7 @@ class InvertedPendulum:
 
         return [dtheta_dt, domega_dt, dx_dt, dv_dt]
 
-    def simulate_step(self, voltage=0) -> List[float]:
+    def simulate_step(self, action: np.intp) -> tuple[List[float], float, bool]:
         """
         ### simulate_step/2
         Simulate a single step of the pendulum
@@ -171,7 +171,15 @@ class InvertedPendulum:
         Returns:
             List[float]: [theta, omega, cart_position, cart_velocity]
         """
-        force = self.apply_voltage(voltage)
+        match action:
+            case 0:
+                voltage = -60
+            case 1:
+                voltage = 60
+            case n:
+                voltage = n
+
+        force = self.apply_voltage(voltage)  # type: ignore
 
         # Integrate the equations of motion
         # The state is integrated from 0 to dt
@@ -184,8 +192,12 @@ class InvertedPendulum:
         )
 
         new_state = solution.y[:, -1]
-        self.state = self.enforce_constraints(new_state, voltage)
-        return self.state
+        self.state = self.enforce_constraints(new_state, voltage)  # type: ignore
+        return (
+            self.state,
+            self.calculate_reward(self.state),
+            self.terminal_state(self.state),
+        )
 
     def enforce_constraints(self, state: List[float], voltage: float) -> List[float]:
         """
@@ -227,3 +239,57 @@ class InvertedPendulum:
 
         theta = theta_from_vertical + np.pi
         return [theta, omega, cart_position, cart_velocity]
+
+    def calculate_reward(self, state):
+        """
+        ### calculate_reward/2
+        Calculate the reward for the current state.
+
+        Args:
+            state (List[float]): [theta, omega, cart_position, cart_velocity]
+
+        Returns:
+            float: Reward
+        """
+        theta, _, _, _ = state
+        target_angle = np.pi
+
+        angle_difference = np.abs(theta - target_angle)
+
+        reward = 1.0 / (1.0 + angle_difference)
+
+        return reward
+
+    def terminal_state(self, state):
+        """
+        ### terminal_state/1
+        Check if the state is a terminal state.
+
+        Args:
+            state (List[float]): [theta, omega, cart_position, cart_velocity]
+
+        Returns:
+            bool: True if the state is terminal, False otherwise.
+        """
+        theta, _, cart_position, _ = state
+        max_angle = 3.58
+        min_angle = 2.71
+        min_position = 0.0
+        max_position = 0.5
+
+        if theta >= max_angle or theta <= min_angle:
+            return True
+        if cart_position >= max_position or cart_position <= min_position:
+            return True
+        return False
+
+    def reset(self) -> List[float]:
+        """
+        ### reset/1
+        Reset the state of the system to the initial state.
+
+        Returns:
+            List[float]: [theta, omega, cart_position, cart_velocity]
+        """
+        self.state = [np.pi, 0.1, 0.25, 0]
+        return self.state
