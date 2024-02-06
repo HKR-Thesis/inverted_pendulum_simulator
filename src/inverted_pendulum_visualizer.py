@@ -45,7 +45,7 @@ class InvertedPendulumVisualizer:
         self.cart_width = 0.2
         self.cart_height = 0.1
         self.cart = patches.Rectangle(
-            (self.pendulum.cart_position - self.cart_width / 2, -self.cart_height / 2),
+            (self.pendulum.x - self.cart_width / 2, -self.cart_height / 2),
             self.cart_width,
             self.cart_height,
             fc="black",
@@ -106,19 +106,19 @@ class InvertedPendulumVisualizer:
         plt.show()
 
     def __update_prerendering(self, frame):
-        theta, omega, cart_position, cart_velocity = self.states[frame]
+        theta, omega, x, x_dot = self.states[frame]
 
-        self.cart.set_xy((cart_position - self.cart_width / 2, -0.05))
+        self.cart.set_xy((x - self.cart_width / 2, -0.05))
         self.line.set_data(
-            [cart_position, cart_position + self.pendulum.l * np.sin(theta)],
+            [x, x + self.pendulum.l * np.sin(theta)],
             [0, -self.pendulum.l * np.cos(theta)],
         )
 
         info_template = (
             f"Angle (rad): {theta:.2f}\n"
             f"Angular velocity (rad/s): {omega:.2f}\n"
-            f"Cart position (m): {cart_position:.2f}\n"
-            f"Cart velocity (m/s): {cart_velocity:.2f}"
+            f"Cart position (m): {x:.2f}\n"
+            f"Cart velocity (m/s): {x_dot:.2f}"
         )
         self.info_text.set_text(info_template)
 

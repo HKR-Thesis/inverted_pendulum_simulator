@@ -36,7 +36,7 @@ class InvertedPendulum:
         self.max_theta = np.radians(25)
 
         self.track_length = 0.5
-        self.cart_position = 0.25
+        self.x = 0.25
 
         # Friction and air resistance constants
         self.friction_coefficient = 0.3
@@ -44,7 +44,7 @@ class InvertedPendulum:
         self.friction_exponent = 1.5
 
         # Starts upright with a small push
-        self.state = [np.pi, 0.1, self.cart_position, 0]
+        self.state = [np.pi, 0.1, self.x, 0]
 
     def _calculate_force(self, action: Action) -> float:
         match action.direction:
@@ -61,7 +61,7 @@ class InvertedPendulum:
         self, state: List[float], applied_force: float
     ) -> List[float]:
         
-        theta, omega, _, cart_velocity = state
+        theta, omega, _, x_dot = state
         # Use the angle measured from the vertical position instead of the horizontal position
         theta_from_vertical = theta - np.pi
 
@@ -78,16 +78,16 @@ class InvertedPendulum:
         # Implement non-linear friction
         friction_force = (
             self.friction_coefficient
-            * np.sign(cart_velocity)
-            * np.abs(cart_velocity) ** self.friction_exponent
+            * np.sign(x_dot)
+            * np.abs(x_dot) ** self.friction_exponent
         )
         total_force = (
             applied_force
             - friction_force
-            - self.air_resistance_coefficient * cart_velocity
+            - self.air_resistance_coefficient * x_dot
         )
         dv_dt = total_force / self.m
-        dx_dt = cart_velocity
+        dx_dt = x_dot
 
         return [dtheta_dt, domega_dt, dx_dt, dv_dt]
 
@@ -112,21 +112,21 @@ class InvertedPendulum:
         )
 
     def enforce_constraints(self, state: List[float], duty_cycle: float) -> List[float]:
-        theta, omega, cart_position, cart_velocity = state
+        theta, omega, x, x_dot = state
         theta_from_vertical = theta - np.pi  # Measure angle from the vertical
 
         # Check if the cart is at the boundaries
-        at_boundary = cart_position <= 0 or cart_position >= self.track_length
+        at_boundary = x <= 0 or x >= self.track_length
 
         if at_boundary or duty_cycle == 0:
             # If at boundary, the cart should stop
-            cart_position = np.clip(cart_position, 0, self.track_length)
-            if cart_velocity != 0:
+            x = np.clip(x, 0, self.track_length)
+            if x_dot != 0:
                 # Calculate impulse due to sudden stop of the cart
-                impulse = -cart_velocity * self.m
+                impulse = -x_dot * self.m
                 # Apply impulse to change in pendulum's angular velocity
                 omega += impulse * self.l / self.I
-            cart_velocity = 0
+            x_dot = 0
 
         # Enforce angle limit with inelastic collision
         if abs(theta_from_vertical) > self.max_theta:
@@ -137,7 +137,7 @@ class InvertedPendulum:
         )
 
         theta = theta_from_vertical + np.pi
-        return [theta, omega, cart_position, cart_velocity]
+        return [theta, omega, x, x_dot]
 
     def calculate_reward(self, state):
         """
@@ -145,7 +145,7 @@ class InvertedPendulum:
         Calculate the reward for the current state.
 
         Args:
-            state (List[float]): [theta, omega, cart_position, cart_velocity]
+            state (List[float]): [theta, omega, x, x_dot]
 
         Returns:
             float: Reward
@@ -165,12 +165,12 @@ class InvertedPendulum:
         Check if the state is a terminal state.
 
         Args:
-            state (List[float]): [theta, omega, cart_position, cart_velocity]
+            state (List[float]): [theta, omega, x, x_dot]
 
         Returns:
             bool: True if the state is terminal, False otherwise.
         """
-        theta, _, cart_position, _ = state
+        theta, _, x, _ = state
         max_angle = 3.58
         min_angle = 2.71
         min_position = 0.0
@@ -178,7 +178,7 @@ class InvertedPendulum:
 
         if theta >= max_angle or theta <= min_angle:
             return True
-        if cart_position >= max_position or cart_position <= min_position:
+        if x >= max_position or x <= min_position:
             return True
         return False
 
@@ -188,7 +188,7 @@ class InvertedPendulum:
         Reset the state of the system to the initial state.
 
         Returns:
-            List[float]: [theta, omega, cart_position, cart_velocity]
+            List[float]: [theta, omega, x, x_dot]
         """
         self.state = [np.pi, 0.1, 0.25, 0]
         return self.state
