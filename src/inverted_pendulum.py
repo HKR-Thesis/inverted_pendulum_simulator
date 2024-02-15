@@ -232,5 +232,6 @@ class InvertedPendulum:
         Returns:
             List[float]: Initial state of the pendulum [theta, omega, x, x_dot].
         """
-        self.state = [np.pi, 0.1, 0.25, 0]
+        random_angular_velocity = np.random.uniform(-0.5, 0.5)
+        self.state = [np.pi, random_angular_velocity, 0.25, 0]
         return self.state
