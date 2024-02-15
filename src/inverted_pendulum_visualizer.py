@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.animation import FuncAnimation
+from inverted_pendulum import InvertedPendulum
 
 
 class InvertedPendulumVisualizer:
@@ -23,7 +24,7 @@ class InvertedPendulumVisualizer:
     | cart_height (float)                  | Height of the cart in the visualization.                    |
     | cart (matplotlib.patches.Rectangle)  | Rectangle representing the cart in the visualization.       |
     | line (matplotlib.lines.Line2D)       | Line representing the pendulum in the visualization.        |
-    | last_voltage (float)                 | The last applied voltage to the pendulum system.            |
+    | last_action (Action)                 | The last applied action to the pendulum system.             |
     | time_elapsed (float)                 | Elapsed time during the visualization.                      |
     | info_text (matplotlib.text.Text)     | Text for displaying information on the visualization.       |
 
@@ -33,7 +34,7 @@ class InvertedPendulumVisualizer:
         visualizer = Visualizer(pendulum)
     """
 
-    def __init__(self, pendulum: object):
+    def __init__(self, pendulum: InvertedPendulum):
         self.pendulum = pendulum
         self.fig, self.ax_main = plt.subplots(figsize=(12, 12))
 
@@ -44,7 +45,7 @@ class InvertedPendulumVisualizer:
         self.cart_width = 0.2
         self.cart_height = 0.1
         self.cart = patches.Rectangle(
-            (self.pendulum.cart_position - self.cart_width / 2, -self.cart_height / 2),
+            (self.pendulum.x - self.cart_width / 2, -self.cart_height / 2),
             self.cart_width,
             self.cart_height,
             fc="black",
@@ -53,7 +54,7 @@ class InvertedPendulumVisualizer:
         (self.line,) = self.ax_main.plot([], [], "o-", lw=2, markersize=8)
         self.ax_main.axhline(0, color="black", lw=2)
 
-        self.last_voltage = 0
+        self.last_action: np.intp = np.intp(0)
         self.time_elapsed = 0
 
         # Text for displaying information
@@ -68,7 +69,7 @@ class InvertedPendulumVisualizer:
         )
 
     def update(self, frame):
-        self.pendulum.simulate_step(self.last_voltage)
+        self.pendulum.simulate_step(self.last_action)
         self.time_elapsed += 1
         theta, omega, cart_x, cart_v = self.pendulum.state
 
@@ -90,31 +91,31 @@ class InvertedPendulumVisualizer:
 
     def key_event(self, event):
         if event.key == "left":
-            self.last_voltage = -self.pendulum.max_voltage
+            # Create new action with 100% duty cycle and backward direction
+            self.last_action = np.intp(0)
         elif event.key == "right":
-            self.last_voltage = self.pendulum.max_voltage
-        else:
-            self.last_voltage = 0
+            # Create new action with 100% duty cycle and forward direction
+            self.last_action = np.intp(1)
 
     def animate(self):
-        ani = FuncAnimation(self.fig, self.update, frames=144, interval=33, blit=False)
+        _ = FuncAnimation(self.fig, self.update, frames=144, interval=33, blit=False)
         self.fig.canvas.mpl_connect("key_press_event", self.key_event)
         plt.show()
 
     def __update_prerendering(self, frame):
-        theta, omega, cart_position, cart_velocity = self.states[frame]
+        theta, omega, x, x_dot = self.states[frame]
 
-        self.cart.set_xy((cart_position - self.cart_width / 2, -0.05))
+        self.cart.set_xy((x - self.cart_width / 2, -0.05))
         self.line.set_data(
-            [cart_position, cart_position + self.pendulum.l * np.sin(theta)],
+            [x, x + self.pendulum.l * np.sin(theta)],
             [0, -self.pendulum.l * np.cos(theta)],
         )
 
         info_template = (
             f"Angle (rad): {theta:.2f}\n"
             f"Angular velocity (rad/s): {omega:.2f}\n"
-            f"Cart position (m): {cart_position:.2f}\n"
-            f"Cart velocity (m/s): {cart_velocity:.2f}"
+            f"Cart position (m): {x:.2f}\n"
+            f"Cart velocity (m/s): {x_dot:.2f}"
         )
         self.info_text.set_text(info_template)
 
@@ -124,7 +125,7 @@ class InvertedPendulumVisualizer:
         self.states = states
         num_frames = len(states)
 
-        ani = FuncAnimation(
+        _ = FuncAnimation(
             self.fig,
             self.__update_prerendering,
             frames=num_frames,
