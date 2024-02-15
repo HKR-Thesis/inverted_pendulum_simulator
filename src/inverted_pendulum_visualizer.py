@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.animation import FuncAnimation
-from inverted_pendulum import InvertedPendulum, Action
+from inverted_pendulum import InvertedPendulum
 
 
 class InvertedPendulumVisualizer:
@@ -54,7 +54,7 @@ class InvertedPendulumVisualizer:
         (self.line,) = self.ax_main.plot([], [], "o-", lw=2, markersize=8)
         self.ax_main.axhline(0, color="black", lw=2)
 
-        self.last_action: Action = Action(0, "stop")
+        self.last_action: np.intp = np.intp(0)
         self.time_elapsed = 0
 
         # Text for displaying information
@@ -92,13 +92,10 @@ class InvertedPendulumVisualizer:
     def key_event(self, event):
         if event.key == "left":
             # Create new action with 100% duty cycle and backward direction
-            self.last_action = Action(100, "backward")
+            self.last_action = np.intp(0)
         elif event.key == "right":
             # Create new action with 100% duty cycle and forward direction
-            self.last_action = Action(100, "forward")
-        else:
-            # Create new action with 0% duty cycle and stop direction
-            self.last_action = Action(0, "stop")
+            self.last_action = np.intp(1)
 
     def animate(self):
         _ = FuncAnimation(self.fig, self.update, frames=144, interval=33, blit=False)

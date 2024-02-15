@@ -2,17 +2,34 @@ import numpy as np
 from typing import List
 from scipy.integrate import solve_ivp
 
-class Action:
-    def __init__(self, duty_cycle, direction):
-        self.duty_cycle = duty_cycle  # Duty Cycle value for motor speed
-        self.direction = direction  # Motor direction ("forward" or "backward")
-
-    def __str__(self):
-        return f"Duty Cycle: {self.duty_cycle}, Direction: {self.direction}"
-
-
 class InvertedPendulum:
+    """
+    Class representing an inverted pendulum simulator.
+
+    Attributes:
+        g (float): Acceleration due to gravity.
+        m (float): Mass of the pendulum.
+        l (float): Length of the pendulum.
+        I (float): Moment of inertia of the pendulum.
+        dt (float): Time step for simulation.
+        additional_mass (float): Additional mass attached to the pendulum.
+        additional_moment_of_inertia (float): Moment of inertia of the additional mass.
+        max_voltage (float): Maximum voltage applied to the pendulum.
+        max_force (float): Maximum force applied to the pendulum.
+        voltage_to_force_scale (float): Scaling factor for converting voltage to force.
+        max_theta (float): Maximum angle of the pendulum.
+        track_length (float): Length of the track on which the pendulum moves.
+        x (float): Initial position of the pendulum on the track.
+        friction_coefficient (float): Coefficient of friction.
+        air_resistance_coefficient (float): Coefficient of air resistance.
+        friction_exponent (float): Exponent for the friction force calculation.
+        state (List[float]): Current state of the pendulum [theta, omega, x, x_dot].
+    """
+
     def __init__(self) -> None:
+        """
+        Initialize the InvertedPendulum object.
+        """
         self.g = 9.81
         self.m = 0.17
         self.l = 0.305
@@ -27,7 +44,6 @@ class InvertedPendulum:
             self.additional_mass * attachment_position**2
         )
 
-        # Adjust the total moment of inertia to include the additional mass
         self.I += self.additional_moment_of_inertia
 
         self.max_voltage = 60
@@ -38,44 +54,62 @@ class InvertedPendulum:
         self.track_length = 0.5
         self.x = 0.25
 
-        # Friction and air resistance constants
         self.friction_coefficient = 0.3
         self.air_resistance_coefficient = 0.1
         self.friction_exponent = 1.5
 
-        # Starts upright with a small push
         self.state = [np.pi, 0.1, self.x, 0]
 
-    def _calculate_force(self, action: Action) -> float:
-        match action.direction:
-            case "forward":
-                return action.duty_cycle / 100 * self.max_force
-            case "backward":
-                return -(action.duty_cycle / 100 * self.max_force)
-            case "stop":
-                return 0
+    def _calculate_force(self, action: np.intp) -> float:
+        """
+        Calculate the force based on the given action.
+
+        Args:
+            action (np.intp): Action to be performed.
+
+        Returns:
+            float: Force to be applied.
+        
+        Raises:
+            ValueError: If the direction is invalid.
+        """
+        
+        # In actuality, this would be the max voltage in either the positive or negative 
+        # direction but for the sake of the simulation, we skip one step
+        # and just use the max force immediately
+        match action:
+            case 1:
+                return self.max_force
+            case 0:
+                return -self.max_force
             case _:
                 raise ValueError("Invalid direction")            
 
     def equations_of_motion(
         self, state: List[float], applied_force: float
     ) -> List[float]:
-        
+        """
+        Calculate the equations of motion for the pendulum.
+
+        Args:
+            state (List[float]): Current state of the pendulum [theta, omega, x, x_dot].
+            applied_force (float): Force applied to the pendulum.
+
+        Returns:
+            List[float]: Derivatives of the state variables [dtheta_dt, domega_dt, dx_dt, dv_dt].
+        """
         theta, omega, _, x_dot = state
-        # Use the angle measured from the vertical position instead of the horizontal position
         theta_from_vertical = theta - np.pi
 
-        # Derivatives of Lagrangian w.r.t. theta and omega
         dL_dtheta = -self.m * self.g * self.l * np.sin(theta_from_vertical)
         dL_domega = self.I * omega
 
-        # Euler-Lagrange Equation
         domega_dt = (
             dL_domega - dL_dtheta
         ) / self.I + applied_force * self.l / self.I * np.cos(theta_from_vertical)
         dtheta_dt = omega
 
-        # Implement non-linear friction
+        # on-linear friction
         friction_force = (
             self.friction_coefficient
             * np.sign(x_dot)
@@ -91,10 +125,17 @@ class InvertedPendulum:
 
         return [dtheta_dt, domega_dt, dx_dt, dv_dt]
 
-    def simulate_step(self, action: Action) -> tuple[List[float], float, bool]:
+    def simulate_step(self, action: np.intp) -> tuple[List[float], float, bool]:
+        """
+        Simulate a single step of the pendulum.
+
+        Args:
+            action (np.intp): Action to be performed.
+
+        Returns:
+            tuple[List[float], float, bool]: New state, reward, and terminal flag.
+        """
         applied_force = self._calculate_force(action)
-        # Integrate the equations of motion
-        # The state is integrated from 0 to dt
         solution = solve_ivp(
             lambda _, y: self.equations_of_motion(y, applied_force),
             [0, self.dt],
@@ -102,9 +143,8 @@ class InvertedPendulum:
             method="RK45",
             t_eval=[self.dt],
         )
-
         new_state = solution.y[:, -1]
-        self.state = self.enforce_constraints(new_state, action.duty_cycle)
+        self.state = self.enforce_constraints(new_state, 100)
         return (
             self.state,
             self.calculate_reward(self.state),
@@ -112,25 +152,30 @@ class InvertedPendulum:
         )
 
     def enforce_constraints(self, state: List[float], duty_cycle: float) -> List[float]:
-        theta, omega, x, x_dot = state
-        theta_from_vertical = theta - np.pi  # Measure angle from the vertical
+        """
+        Enforce constraints on the pendulum state.
 
-        # Check if the cart is at the boundaries
+        Args:
+            state (List[float]): Current state of the pendulum [theta, omega, x, x_dot].
+            duty_cycle (float): Duty cycle of the pendulum.
+
+        Returns:
+            List[float]: Updated state of the pendulum.
+        """
+        theta, omega, x, x_dot = state
+        theta_from_vertical = theta - np.pi
+
         at_boundary = x <= 0 or x >= self.track_length
 
         if at_boundary or duty_cycle == 0:
-            # If at boundary, the cart should stop
             x = np.clip(x, 0, self.track_length)
             if x_dot != 0:
-                # Calculate impulse due to sudden stop of the cart
                 impulse = -x_dot * self.m
-                # Apply impulse to change in pendulum's angular velocity
                 omega += impulse * self.l / self.I
             x_dot = 0
 
-        # Enforce angle limit with inelastic collision
         if abs(theta_from_vertical) > self.max_theta:
-            omega *= -0.55  # Inelastic collision damping
+            omega *= -0.55
 
         theta_from_vertical = np.clip(
             theta_from_vertical, -self.max_theta, self.max_theta
@@ -141,14 +186,13 @@ class InvertedPendulum:
 
     def calculate_reward(self, state):
         """
-        ### calculate_reward/2
-        Calculate the reward for the current state.
+        Calculate the reward based on the current state.
 
         Args:
-            state (List[float]): [theta, omega, x, x_dot]
+            state (List[float]): Current state of the pendulum [theta, omega, x, x_dot].
 
         Returns:
-            float: Reward
+            float: Reward value.
         """
         theta, _, _, _ = state
         target_angle = np.pi
@@ -161,14 +205,13 @@ class InvertedPendulum:
 
     def terminal_state(self, state):
         """
-        ### terminal_state/1
-        Check if the state is a terminal state.
+        Check if the current state is a terminal state.
 
         Args:
-            state (List[float]): [theta, omega, x, x_dot]
+            state (List[float]): Current state of the pendulum [theta, omega, x, x_dot].
 
         Returns:
-            bool: True if the state is terminal, False otherwise.
+            bool: True if terminal state, False otherwise.
         """
         theta, _, x, _ = state
         max_angle = 3.58
@@ -184,11 +227,10 @@ class InvertedPendulum:
 
     def reset(self) -> List[float]:
         """
-        ### reset/1
-        Reset the state of the system to the initial state.
+        Reset the pendulum to its initial state.
 
         Returns:
-            List[float]: [theta, omega, x, x_dot]
+            List[float]: Initial state of the pendulum [theta, omega, x, x_dot].
         """
         self.state = [np.pi, 0.1, 0.25, 0]
         return self.state
