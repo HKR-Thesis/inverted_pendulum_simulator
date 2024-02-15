@@ -12,9 +12,6 @@ class InvertedPendulum:
         l (float): Length of the pendulum.
         I (float): Moment of inertia of the pendulum.
         dt (float): Time step for simulation.
-        additional_mass (float): Additional mass attached to the pendulum.
-        additional_moment_of_inertia (float): Moment of inertia of the additional mass.
-        max_voltage (float): Maximum voltage applied to the pendulum.
         max_force (float): Maximum force applied to the pendulum.
         voltage_to_force_scale (float): Scaling factor for converting voltage to force.
         max_theta (float): Maximum angle of the pendulum.
@@ -33,32 +30,26 @@ class InvertedPendulum:
         self.g = 9.81
         self.m = 0.17
         self.l = 0.305
-        self.I = self.m * self.l**2
         self.dt = 0.02
-
-        self.additional_mass = 0.09
-
-        attachment_position = self.l * 7 / 8
-
-        self.additional_moment_of_inertia = (
-            self.additional_mass * attachment_position**2
-        )
-
-        self.I += self.additional_moment_of_inertia
-
-        self.max_voltage = 60
-        self.max_force = 2
-        self.voltage_to_force_scale = self.max_force / self.max_voltage
+        self.I = self._calculate_moment_of_inertia()
+        
+        self.max_force = 2.3
         self.max_theta = np.radians(25)
-
         self.track_length = 0.5
         self.x = 0.25
 
         self.friction_coefficient = 0.3
         self.air_resistance_coefficient = 0.1
         self.friction_exponent = 1.5
-
         self.state = [np.pi, 0.1, self.x, 0]
+        
+    def _calculate_moment_of_inertia(self) -> float:
+        additional_mass = 0.09
+        attachment_position = self.l * 7 / 8
+        additional_moment_of_inertia = (
+            additional_mass * attachment_position**2
+        )
+        return self.m * self.l**2 + additional_moment_of_inertia
 
     def _calculate_force(self, action: np.intp) -> float:
         """
