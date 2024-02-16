@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.animation import FuncAnimation
-from inverted_pendulum import InvertedPendulum
 from datetime import datetime
 import uuid
 
@@ -36,7 +35,7 @@ class InvertedPendulumVisualizer:
         visualizer = Visualizer(pendulum)
     """
 
-    def __init__(self, pendulum: InvertedPendulum):
+    def __init__(self, pendulum):
         self.pendulum = pendulum
         self.fig, self.ax_main = plt.subplots(figsize=(12, 12))
 
