@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.animation import FuncAnimation
 from inverted_pendulum import InvertedPendulum
+from datetime import datetime
+import uuid
 
 
 class InvertedPendulumVisualizer:
@@ -125,14 +127,19 @@ class InvertedPendulumVisualizer:
         self.states = states
         num_frames = len(states)
 
-        _ = FuncAnimation(
+        ani = FuncAnimation(
             self.fig,
             self.__update_prerendering,
             frames=num_frames,
             interval=33,
             blit=False,
         )
-        plt.show()
+        ani.save(
+            "visualizations/"
+            + datetime.today().strftime("%Y-%m-%d-%hr-%m-%s")
+            + str(uuid.uuid4())
+            + ".gif"
+        )
 
 
 if __name__ == "__main__":
