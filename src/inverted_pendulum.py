@@ -16,7 +16,7 @@ class InvertedPendulum:
         voltage_to_force_scale (float): Scaling factor for converting voltage to force.
         max_theta (float): Maximum angle of the pendulum.
         track_length (float): Length of the track on which the pendulum moves.
-        x (float): Initial position of the pendulum on the track.
+        cart_position (float): Initial position of the pendulum on the track.
         state (List[float]): Current state of the pendulum [theta, omega, x, x_dot].
     """
 
@@ -33,9 +33,9 @@ class InvertedPendulum:
         self.max_force = 2.3
         self.max_theta = np.radians(25)
         self.track_length = 0.5
-        self.x = 0.25
+        self.cart_position = 0.25
 
-        self.state = [np.pi, 0.1, self.x, 0]
+        self.state = [np.pi, 0.1, self.cart_position, 0]
         
     def _calculate_moment_of_inertia(self) -> float:
         additional_mass = 0.09
@@ -111,7 +111,7 @@ class InvertedPendulum:
         """
         applied_force = self._calculate_force(action)
         solution = solve_ivp(
-            lambda _, y: self.equations_of_motion(y, applied_force),
+            lambda _, state: self.equations_of_motion(state, applied_force),
             [0, self.dt],
             self.state,
             method="RK45",

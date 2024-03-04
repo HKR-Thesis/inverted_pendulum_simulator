@@ -46,7 +46,7 @@ class InvertedPendulumVisualizer:
         self.cart_width = 0.2
         self.cart_height = 0.1
         self.cart = patches.Rectangle(
-            (self.pendulum.x - self.cart_width / 2, -self.cart_height / 2),
+            (self.pendulum.cart_position - self.cart_width / 2, -self.cart_height / 2),
             self.cart_width,
             self.cart_height,
             fc="black",
