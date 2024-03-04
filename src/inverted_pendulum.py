@@ -17,9 +17,6 @@ class InvertedPendulum:
         max_theta (float): Maximum angle of the pendulum.
         track_length (float): Length of the track on which the pendulum moves.
         x (float): Initial position of the pendulum on the track.
-        friction_coefficient (float): Coefficient of friction.
-        air_resistance_coefficient (float): Coefficient of air resistance.
-        friction_exponent (float): Exponent for the friction force calculation.
         state (List[float]): Current state of the pendulum [theta, omega, x, x_dot].
     """
 
@@ -38,9 +35,6 @@ class InvertedPendulum:
         self.track_length = 0.5
         self.x = 0.25
 
-        self.friction_coefficient = 0.3
-        self.air_resistance_coefficient = 0.1
-        self.friction_exponent = 1.5
         self.state = [np.pi, 0.1, self.x, 0]
         
     def _calculate_moment_of_inertia(self) -> float:
@@ -65,7 +59,7 @@ class InvertedPendulum:
             ValueError: If the direction is invalid.
         """
         
-        # In actuality, this would be the max voltage in either the positive or negative 
+        # In actuality, this would be the max voltage (±4.96V) in either the positive or negative 
         # direction but for the sake of the simulation, we skip one step
         # and just use the max force immediately
         match action:
@@ -100,18 +94,7 @@ class InvertedPendulum:
         ) / self.I + applied_force * self.l / self.I * np.cos(theta_from_vertical)
         dtheta_dt = omega
 
-        # on-linear friction
-        friction_force = (
-            self.friction_coefficient
-            * np.sign(x_dot)
-            * np.abs(x_dot) ** self.friction_exponent
-        )
-        total_force = (
-            applied_force
-            - friction_force
-            - self.air_resistance_coefficient * x_dot
-        )
-        dv_dt = total_force / self.m
+        dv_dt = applied_force / self.m
         dx_dt = x_dot
 
         return [dtheta_dt, domega_dt, dx_dt, dv_dt]
@@ -135,20 +118,19 @@ class InvertedPendulum:
             t_eval=[self.dt],
         )
         new_state = solution.y[:, -1]
-        self.state = self.enforce_constraints(new_state, 100)
+        self.state = self.enforce_constraints(new_state)
         return (
             self.state,
             self.calculate_reward(self.state),
             self.terminal_state(self.state),
         )
 
-    def enforce_constraints(self, state: List[float], duty_cycle: float) -> List[float]:
+    def enforce_constraints(self, state: List[float]) -> List[float]:
         """
         Enforce constraints on the pendulum state.
 
         Args:
             state (List[float]): Current state of the pendulum [theta, omega, x, x_dot].
-            duty_cycle (float): Duty cycle of the pendulum.
 
         Returns:
             List[float]: Updated state of the pendulum.
@@ -156,9 +138,9 @@ class InvertedPendulum:
         theta, omega, x, x_dot = state
         theta_from_vertical = theta - np.pi
 
-        at_boundary = x <= 0 or x >= self.track_length
+        at_boundary = (x <= 0 or x >= self.track_length)
 
-        if at_boundary or duty_cycle == 0:
+        if at_boundary:
             x = np.clip(x, 0, self.track_length)
             if x_dot != 0:
                 impulse = -x_dot * self.m
@@ -166,7 +148,7 @@ class InvertedPendulum:
             x_dot = 0
 
         if abs(theta_from_vertical) > self.max_theta:
-            omega *= -0.55
+            omega *= -0.6
 
         theta_from_vertical = np.clip(
             theta_from_vertical, -self.max_theta, self.max_theta
