@@ -167,12 +167,16 @@ class InvertedPendulum:
         Returns:
             float: Reward value.
         """
-        theta, _, _, _ = state
+        theta, _, x, _ = state
         target_angle = np.pi
 
         angle_difference = np.abs(theta - target_angle)
+        at_boundary = (x <= 0 or x >= self.track_length)
 
         reward = 1.0 / (1.0 + angle_difference)
+        
+        if at_boundary:
+            reward -= 5
 
         return reward
 
@@ -192,11 +196,16 @@ class InvertedPendulum:
         min_position = 0.0
         max_position = 0.5
 
+        # Check if the pendulum's angle is out of bounds
         if theta >= max_angle or theta <= min_angle:
             return True
+        
+        # Check if the cart has hit the wall
         if x >= max_position or x <= min_position:
             return True
+        
         return False
+
 
     def reset(self) -> List[float]:
         """
