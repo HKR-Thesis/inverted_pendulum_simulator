@@ -62,13 +62,13 @@ class InvertedPendulum:
         # In actuality, this would be the max voltage (±4.96V) in either the positive or negative 
         # direction but for the sake of the simulation, we skip one step
         # and just use the max force immediately
-        match action:
-            case 1:
-                return self.max_force
-            case 0:
-                return -self.max_force
-            case _:
-                raise ValueError("Invalid direction")            
+        
+        if action == 1:
+            return self.max_force
+        elif action == 0:
+            return -self.max_force
+
+        raise ValueError("Invalid Direction")
 
     def equations_of_motion(
         self, state: List[float], applied_force: float
