@@ -58,14 +58,8 @@ class InvertedPendulum:
             ValueError: If the direction is invalid.
         """
 
-        # In actuality, this would be the max voltage (±4.96V) in either the positive or negative
-        # direction but for the sake of the simulation, we skip one step
-        # and just use the max force immediately
-        
-        if action == 1:
-            return self.max_force
-        elif action == 0:
-            return -self.max_force
+        if action in {-1, 1}:
+            return action * self.max_force
 
         raise ValueError("Invalid Direction")
 
