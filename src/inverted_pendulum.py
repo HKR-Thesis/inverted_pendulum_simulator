@@ -2,6 +2,7 @@ import numpy as np
 from typing import List
 from scipy.integrate import solve_ivp
 
+
 class InvertedPendulum:
     """
     Class representing an inverted pendulum simulator.
@@ -20,7 +21,7 @@ class InvertedPendulum:
         state (List[float]): Current state of the pendulum [theta, omega, x, x_dot].
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         """
         Initialize the InvertedPendulum object.
         """
@@ -29,23 +30,21 @@ class InvertedPendulum:
         self.l = 0.305
         self.dt = 0.02
         self.I = self._calculate_moment_of_inertia()
-        
+
         self.max_force = 2.3
         self.max_theta = np.radians(25)
         self.track_length = 0.5
         self.cart_position = 0.25
 
         self.state = [np.pi, 0.1, self.cart_position, 0]
-        
-    def _calculate_moment_of_inertia(self) -> float:
+
+    def _calculate_moment_of_inertia(self):
         additional_mass = 0.09
         attachment_position = self.l * 7 / 8
-        additional_moment_of_inertia = (
-            additional_mass * attachment_position**2
-        )
+        additional_moment_of_inertia = additional_mass * attachment_position**2
         return self.m * self.l**2 + additional_moment_of_inertia
 
-    def _calculate_force(self, action: np.intp) -> float:
+    def _calculate_force(self, action: np.intp):
         """
         Calculate the force based on the given action.
 
@@ -54,12 +53,12 @@ class InvertedPendulum:
 
         Returns:
             float: Force to be applied.
-        
+
         Raises:
             ValueError: If the direction is invalid.
         """
-        
-        # In actuality, this would be the max voltage (±4.96V) in either the positive or negative 
+
+        # In actuality, this would be the max voltage (±4.96V) in either the positive or negative
         # direction but for the sake of the simulation, we skip one step
         # and just use the max force immediately
         
@@ -70,9 +69,7 @@ class InvertedPendulum:
 
         raise ValueError("Invalid Direction")
 
-    def equations_of_motion(
-        self, state: List[float], applied_force: float
-    ) -> List[float]:
+    def equations_of_motion(self, state, applied_force):
         """
         Calculate the equations of motion for the pendulum.
 
@@ -99,7 +96,7 @@ class InvertedPendulum:
 
         return [dtheta_dt, domega_dt, dx_dt, dv_dt]
 
-    def simulate_step(self, action: np.intp) -> tuple[List[float], float, bool]:
+    def simulate_step(self, action: np.intp):
         """
         Simulate a single step of the pendulum.
 
@@ -125,7 +122,7 @@ class InvertedPendulum:
             self.terminal_state(self.state),
         )
 
-    def enforce_constraints(self, state: List[float]) -> List[float]:
+    def enforce_constraints(self, state):
         """
         Enforce constraints on the pendulum state.
 
@@ -138,7 +135,7 @@ class InvertedPendulum:
         theta, omega, x, x_dot = state
         theta_from_vertical = theta - np.pi
 
-        at_boundary = (x <= 0 or x >= self.track_length)
+        at_boundary = x <= 0 or x >= self.track_length
 
         if at_boundary:
             x = np.clip(x, 0, self.track_length)
@@ -171,10 +168,10 @@ class InvertedPendulum:
         target_angle = np.pi
 
         angle_difference = np.abs(theta - target_angle)
-        at_boundary = (x <= 0 or x >= self.track_length)
+        at_boundary = x <= 0 or x >= self.track_length
 
         reward = 1.0 / (1.0 + angle_difference)
-        
+
         if at_boundary:
             reward -= 5
 
@@ -196,18 +193,15 @@ class InvertedPendulum:
         min_position = 0.0
         max_position = 0.5
 
-        # Check if the pendulum's angle is out of bounds
         if theta >= max_angle or theta <= min_angle:
             return True
-        
-        # Check if the cart has hit the wall
+
         if x >= max_position or x <= min_position:
             return True
-        
+
         return False
 
-
-    def reset(self) -> List[float]:
+    def reset(self):
         """
         Reset the pendulum to its initial state.
 
