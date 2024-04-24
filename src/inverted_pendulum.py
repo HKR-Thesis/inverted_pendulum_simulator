@@ -58,7 +58,7 @@ class InvertedPendulum:
             ValueError: If the direction is invalid.
         """
 
-        if action in {-1, 1}:
+        if action in {0, 1}:
             return action * self.max_force
 
         raise ValueError("Invalid Direction")
